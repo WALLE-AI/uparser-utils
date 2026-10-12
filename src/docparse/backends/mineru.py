@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
+from urllib.parse import urlsplit
 
 from loguru import logger
 from PIL import Image
@@ -17,6 +18,11 @@ from .base import Backend
 
 
 _CORE = {"type", "bbox", "content", "angle", "merge_prev"}
+
+
+def _keep_path_prefix(url: str) -> str:
+    # mineru-vl-utils drops any path (e.g. a reverse-proxy `/mineru`) unless server_url ends with "/"
+    return url + "/" if urlsplit(url).path else url
 
 
 class MinerUBackend(Backend):
@@ -34,7 +40,7 @@ class MinerUBackend(Backend):
         kwargs: dict[str, Any] = dict(
             backend="http-client",
             model_name=config.model,
-            server_url=config.normalized_url(),
+            server_url=_keep_path_prefix(config.normalized_url()),
             server_headers=config.request_headers() or None,
             max_concurrency=config.concurrency,
             http_timeout=int(config.timeout),
